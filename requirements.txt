@@ -1,0 +1,21 @@
+# Core deep-learning framework
+torch>=2.0.0
+
+# Hugging Face model + tokenization + training APIs
+transformers>=4.31.0
+datasets>=2.13.0
+accelerate>=0.19.0
+huggingface-hub>=0.14.1
+
+# Quantization and optimizer
+bitsandbytes>=0.39.0
+
+# PEFT (LoRA adapters)
+peft>=0.5.0
+
+# TRL Supervised Fine-Tuning Trainer
+trl>=0.6.0
+
+# Progress bars
+tqdm>=4.65.0
+
