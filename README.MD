@@ -5,11 +5,16 @@
 ## 1. Setup
 
 In my implementation of the fine-tuning, I extensively leveraged the Hugging Face ecosystem. With the goal of maximising efficiency and ease of use, the set-up includes foundational Hugging Face APIs like **AutoModelForCausalLM** to load Llama-3-8B-Instruct, **AutoTokenizer** for text encoding/decoding, and **TrainingArguments/Trainer** abstractions for managing training loops.  
+
 I went with **BitsAndBytes** as it is a core foundation of quantisation. This enabled the 8-billion Llama model to be shrunk to fit a single 24–48 GB GPU without a dramatic fall in performance.  
 Specifically, using BitsAndBytes config parameters like `load_in_4bit=True`, `bnb_4bit_quant_type="nf4"`, `bnb_4bit_use_double_quant=True` … ensures that model weights are stored in 4-bit (particularly the NF4 format), while computations still happen in 16-bit or higher.  
+
 The University of Washington researchers in their groundbreaking paper discovered that such `bnb_4bit_use_double_quant=True` saves averagely 0.37 bits per parameter, resulting in substantial to significant memory savings in large models.  
+
 Traditionally, on a single GPU, it would be near impossible to rapidly fine-tune an 8 B llama model, hence my adoption of **Parameter-Efficient Fine-Tuning (PEFT)**, which Meta introduced.  
+
 PEFT—particularly through the introduction of **Low Rank Adapters (LoRA)**—introduces game-changing reduction in the computation demands of fine-tuning LLMs as small, trainable low-rank matrices can be injected into the frozen, quantised model. According to a paper by Edward J. Hu et al, LoRA remarkably slashes training memory and parameters by up to **10 000×** and reduces GPU memory by **3×** while maintaining model quality!  
+
 In my fine-tuning implementation, for the **LoraConfig**, I went with a **Lora rank of 16**, targeting the query, key, value, and output projections for the low-rank adapter injection.  
 Also, to enhance development speed and training standardisation, I wrapped the transformer training loop in **TRL’s SFTTrainer**, wiring up the HF, tokenizer, dataset, LoRA, and quantisation under the hood without introducing elaborate glue code.
 
@@ -18,6 +23,7 @@ Also, to enhance development speed and training standardisation, I wrapped the t
 ## 2. Technique: QLoRA Rationale
 
 QLoRA was a transformative innovation in the fine-tuning universe, thanks to its unique combination of **4-bit model quantisation** and **LoRA adapters**. This means just anyone can reasonably fine-tune a large model on modest hardware.  
+
 The 4-bit quantisation basically involves transforming weights to a 4-bit representation (specifically NF4, or “NormalFloat 4”). Researchers found that this cuts memory usage by **75–80%**. Double quantisation further compresses quantisation constants with negligible accuracy loss. Compute happens in **bfloat16**, preserving numerical stability and speed.  
 According to Dettmers et al. (2023), research conducted on fine-tuning a 65 B model on a single 48 GB GPU within one day incredibly leapt to **99.3%** of ChatGPT’s performance!  
 With QLoRA, my Llama fine-tuning enjoyed faster convergence, without losing performance while avoiding the infamous hurdle of **“catastrophic forgetting”** that fine-tuning sometimes introduces.
@@ -61,6 +67,7 @@ To gauge real-world effectiveness, I would suggest a nuanced combo of qualitativ
     - **Fluency & Grammar**: Are there any language errors or awkward phrasings?
 
 - **Automated “Judge” with a Stronger Model**  
+
   - Llama 3 is fantastic, but its performance pales beside ChatGPT 4. We could deploy a stronger model like GPT-4 via API as an automated evaluator.  
   - Such a senior model would be saddled with automatically scoring or critiquing outputs on content accuracy, persuasiveness, and style. This approach, used in recent LLM evaluation studies, provides rapid, large-scale feedback on output quality, especially when we don’t have the privilege of full human annotation.
 
