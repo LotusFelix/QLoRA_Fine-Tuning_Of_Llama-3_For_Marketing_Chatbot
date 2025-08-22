@@ -18,8 +18,8 @@ OUTPUT_DIR = "llama3-8b-qlora-finetuned"
 
 # 2. Hyperparams
 MODEL_NAME     = "meta-llama/Meta-Llama-3-8B-Instruct"
-LORA_R         = 16
-LORA_ALPHA     = LORA_R * 2
+LORA_R         = 16 
+LORA_ALPHA     = LORA_R * 2 
 LORA_DROPOUT   = 0.05
 BATCH_SIZE     = 4
 EPOCHS         = 3
@@ -74,12 +74,12 @@ def main():
 
     # LoRA
     peft_conf = LoraConfig(
-        r=LORA_R,
+        r=LORA_R,#16
         lora_alpha=LORA_ALPHA,
         lora_dropout=LORA_DROPOUT,
         bias="none",
         task_type=TaskType.CAUSAL_LM,
-        target_modules=["q_proj","k_proj","v_proj","o_proj"]
+        target_modules=["q_proj","k_proj","v_proj","o_proj"] 
     )
     model = get_peft_model(model, peft_conf)
     t, tot = model.get_nb_trainable_parameters()
@@ -101,7 +101,7 @@ def main():
     print(f"→ Train: {len(train_ds)} samples; Eval: {len(eval_ds)}")
 
     # TrainingArguments
-    grad_accum = max(1, 16 // BATCH_SIZE)
+    grad_accum = max(1, 16 // BATCH_SIZE) #4 steps
     args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         per_device_train_batch_size=BATCH_SIZE,
@@ -110,7 +110,7 @@ def main():
         learning_rate=LR,
         warmup_ratio=WARMUP_RATIO,
         bf16=True,
-        optim="paged_adamw_8bit",
+        optim="paged_adamw_8bit", #adamw
         logging_steps=10,
         evaluation_strategy="steps",
         eval_steps=50,
@@ -152,9 +152,10 @@ def main():
     model.config.use_cache=True
     smp = "### Instruction:\nSummarize this blueprint in two sentences.\n\n### Response:\n"
     inp = tok(smp, return_tensors="pt").to(model.device)
-    out = model.generate(**inp, max_new_tokens=100, temperature=0.7, top_p=0.9, pad_token_id=tok.eos_token_id)
-    gen=tok.decode(out[0], skip_special_tokens=True)
-    print("\nGenerated:\n"+gen[len(smp):])
+    out = model.generate(**inp, max_new_tokens=100, do_sample=True, temperature=0.7, top_p=0.9, pad_token_id=tok.eos_token_id)
+    response_tokens=out[0,inp["input_ids"].shape[-1]:]
+    gen=tok.decode(response_tokens,skip_special_tokens=True).strip()
+    print("\nGenerated:\n"+gen)
 
 if __name__=="__main__":
     main()
