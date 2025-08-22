@@ -17,7 +17,7 @@ def main():
 
     # 2. Tokenizer & model (requires HF_TOKEN or `huggingface-cli login`)
     tokenizer = AutoTokenizer.from_pretrained(
-        model_id, trust_remote_lade=True, use_auth_token=True
+        model_id, trust_remote_code=True, use_auth_token=True
     )
     tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -37,9 +37,13 @@ def main():
         for line in f:
             prompts.append(json.loads(line))
 
+    #Prompt becomes a list compilation of dictionaries, where each dictionary is a training instance--response with placeholder 
+
+    ###{"instruction":...,"context":...,"responses":""}
+
     # 4. Generate and write
     with open(OUTP, "w", encoding="utf-8") as fout:
-        for ex in tqdm(prompts, desc="Generating"):
+        for ex in tqdm(prompts, desc="Generating"): #tqdm is a dynamic progress bar
             instr = ex["instruction"].strip()
             ctx   = json.dumps(ex["context"], ensure_ascii=False)
             prompt = (
@@ -48,18 +52,20 @@ def main():
                 "\n\n### Response:\n"
             )
 
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device) #tensor input from tokenizer input_id,attention_mask
             out = model.generate(
                 **inputs,
                 max_new_tokens=150,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=tokenizer.eos_token_id
+                do_sample=True,
+                temperature=0.7, #between the model output being deterministic and being varied or creative >1.0 0.1
+                top_p=0.9, #next_tokens whose cumulative probability exceed 0.9
+                pad_token=tokenizer.pad_token
             )
 
-            full     = tokenizer.decode(out[0], skip_special_tokens=True)
-            response = full[len(prompt):].strip()
-            ex["response"] = response
+            response_tokens=out[0,inputs["input_ids"].shape[-1]:]
+            #inputs["input_ids"].shape[-1]:==>prompt_length:
+            #this #inputs["input_ids"] input ids you fed into model (batch_size,prompt_length)
+            ex["response"] = tokenizer.decode(response_tokens,skip_special_tokens=True).strip()
             fout.write(json.dumps(ex, ensure_ascii=False) + "\n")
 
     print(f"Wrote {len(prompts)} examples with responses to {OUTP}")
