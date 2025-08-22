@@ -1,4 +1,4 @@
-# Marketing.MBA Fine-Tuning Plan for Llama-3-8B-Instruct
+# Fine-Tuning Plan for Llama-3-8B-Instruct LLM
 
 ---
 
@@ -72,14 +72,3 @@ To gauge real-world effectiveness, I would suggest a nuanced combo of qualitativ
   - Such a senior model would be saddled with automatically scoring or critiquing outputs on content accuracy, persuasiveness, and style. This approach, used in recent LLM evaluation studies, provides rapid, large-scale feedback on output quality, especially when we don’t have the privilege of full human annotation.
 
 ---
-
-> **Next Steps**:  
-> ```bash
-> git clone https://github.com/your-org/marketing-mba-pipeline.git
-> cd marketing-mba-pipeline
-> pip install -r requirements.txt
-> export HF_TOKEN="hf_<your_token>"      # or `huggingface-cli login`
-> python prepare_data.py
-> python generate_responses.py
-> python finetune_llama3_qlora.py
-> ```
